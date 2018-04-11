@@ -384,12 +384,27 @@ Lang.prototype.__autoloadLangData = function () {
 };
 
 /**
+ * Makes ready instance of some "Lang" class.
+ * Waits while language data is autoloading.
+ * @param {Function} Clss Language class.
+ * @param {string} [lang] Language code.
+ * @param {string} [root] Path to the folder of language files.
+ * @returns {Promise<Lang>} Ready language instance.
+ * @throws {Error}
+ */
+Lang.getReadyInstByClass = function (Clss, lang, root) {
+    if (typeof Clss !== "function") throw new Error("Got incorrect 'Lang' constructor!");
+    return (new Clss({ lang: lang, root: root })).prepare();
+};
+
+/**
  * Makes ready instance.
  * Waits while language data is autoloading.
  * @param {string} [lang] Language code.
  * @param {string} [root] Path to the folder of language files.
  * @returns {Promise<Lang>} Ready language instance.
+ * @throws {Error}
  */
 Lang.getReadyInst = function (lang, root) {
-    return (new Lang({ lang: lang, root: root })).prepare();
+    return Lang.getReadyInstByClass(Lang, lang, root);
 };
