@@ -52,7 +52,7 @@ UserProfileLang.getReadyInst = function (lang) {
 };
 ```
 
-Do note that "UserProfileLang" class is singletone; it means that it is possible to make only one instance of it (when you creating instance more than one time you get the same instance).
+Do note that ``UserProfileLang`` class is singletone; it means that it is possible to make only one instance of it (when you creating instance more than one time you get the same instance).
 So now we can rewrite code from the first example. As you can see it looks pretty good and laconically.
 
 ```javascript
