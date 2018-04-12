@@ -1,5 +1,5 @@
 # Lang
-Class to make multilanguage of web-site as easy as possible.
+Class to make multilanguage of web-site as easy as possible. Gets language data from `.json` files.
 
 # Examples
 ## 1. Simple example
@@ -19,6 +19,23 @@ h1.textContent = userAchievements;
 h2.textContent = userArticles;
 document.body.appendChild(h1);
 document.body.appendChild(h2);
+```
+
+For this example you have to organize this folders/files structure:
+
+```inline
+.
+├── ...
+├── lang                            # Root folder for logical language blocks.
+|   ├── ...
+|   ├── user-profile                # Root folder for user profile page language files.
+|   |   ├── [some_lang_code].json
+|   |   ├── pl.json                 # Language file for Polish version of the page.
+|   |   ├── uk.json                 # Language file for English version of the page.
+|   |   ├── [some_lang_code].json
+|   |   └── ...
+|   └── ...
+└── ...
 ```
 
 ## 2. Better usage.
