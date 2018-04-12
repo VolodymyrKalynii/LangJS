@@ -171,20 +171,9 @@ Lang.prototype.prepare = function () {
  * @returns {Promise<Lang>} Ready language instance.
  */
 Lang.prototype.waitWhileAutoloading = function (tries) {
-    return new Promise(function (success, error) {
-        if (this.__data) return success(this.__data);
-        if (!this.__autoloadingNow) return this.prepare().then(success).catch(error);
-        tries = tries || 200;
-
-        setTimeout(function iterator() {
-            --tries;
-            if (tries <= 0)
-                return error(new Error("Failed at waiting while language data is autoloading. Run out of tries!"));
-
-            if (this.__data) return success(this);
-            return setTimeout(iterator.bind(this), 100);
-        }.bind(this), 100);
-    }.bind(this));
+    if (this.__data) return Promise.resolve(this.__data);
+    if (!this.__autoloadingNow) return this.prepare();
+    return this.__autoloadingPomise;
 };
 
 /**
