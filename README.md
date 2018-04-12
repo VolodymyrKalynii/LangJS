@@ -24,7 +24,7 @@ document.body.appendChild(h2);
 For this example you have to organize this folders/files structure:
 
 ```inline
-.
+app
 ├── ...
 ├── lang                            # Root folder for logical language blocks.
 |   ├── ...
