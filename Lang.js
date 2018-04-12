@@ -162,6 +162,7 @@ Lang.UZ = "uz";
  * @returns {Promise<Lang>}
  */
 Lang.prototype.prepare = function () {
+    if (this.__data) return Promise.resolve(this);
     return this.__autoloadLangData().then(function () { return this; }.bind(this));
 };
 
@@ -170,10 +171,9 @@ Lang.prototype.prepare = function () {
  * @param {int} [tries = 200] Number of tries to wait for autoloading of language data.
  * @returns {Promise<Lang>} Ready language instance.
  */
-Lang.prototype.waitWhileAutoloading = function (tries) {
-    if (this.__data) return Promise.resolve(this.__data);
-    if (!this.__autoloadingNow) return this.prepare();
-    return this.__autoloadingPomise;
+Lang.prototype.wait = function (tries) {
+    if (this.__data) return Promise.resolve(this);
+    return this.prepare();
 };
 
 /**
