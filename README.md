@@ -1,5 +1,5 @@
 # Lang
-Class to make multilanguage of web-site as easy as possible. Gets language data from `.json` files.
+Class to make multilanguage of web-site as easy as possible. Gets language data from `.json` files. You can find PHP version of this class at https://github.com/balovbohdan/LangPHP
 
 # Examples
 ## 1. Simple example
