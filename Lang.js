@@ -6,11 +6,31 @@
  * @param {string} [params.lang = 'uk'] Code of the language. Instance trys to find code himself. Otherwise uses 'uk'.
  * @param {string} [params.root] Root of the language files.
  * @param {boolean} [params.autoload = true] Is in needed to start loading language data right after making instance?
+ * @param {PhpSession} [params.phpSession] Ready instance of PHP session.
  * @param {Object} [config] Configurations.
  * @param {{}} [config.defLangCodes] Default language codes.
  * @constructor
  * @author Balov Bohdan <balovbohdan@gmail.com>
  * @version 0.1.2
+ *
+ * @example
+ *
+ * // Make language instance.
+ * const lang = Lang.getReadyInst('/lang/user-profile/', 'uk');
+ *
+ * // Wait while language data is loading.
+ * lang.wait().then(() => {
+ *     // Use language instance.
+ *
+ *     const h1 = document.createElement('h1');
+ *     const h2 = document.createElement('h2');
+ *
+ *     h1.textContent = lang.get('achievements');
+ *     h2.textContent = lang.get('articles');
+ *
+ *     document.body.appendChild(h1);
+ *     document.body.appendChild(h2);
+ * });
  */
 function Lang(params, config) {
     params = $.extend(true, this.__getDefParams(), params || {});
