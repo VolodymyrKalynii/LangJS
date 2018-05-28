@@ -154,7 +154,7 @@ Lang.UZ = 'uz';
  * @returns {Lang}
  */
 Lang.instantiateByRoot = function (root, lang) {
-    if (!root) throw new Error(`Incorrect URL of the language files.`);
+    if (!root) throw new Error(`Got invalid URL of the language files.`);
     return new Lang({ root: root, lang: lang });
 };
 
