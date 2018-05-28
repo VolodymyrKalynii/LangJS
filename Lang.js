@@ -1,47 +1,41 @@
+'use strict';
+
 /**
- * Class for multilanguage realization.
- *
+ * Multilanguage class.
  * @param {Object} [params] Parameters.
- *     @param {string} [params.lang = "uk"] Code of the language.
- *     @param {string} [params.root] Path to the folder of language files.
- *     @param {boolean} [params.autoload = false] Is in needed to start loading language data right after making instance?
- *
+ * @param {string} [params.lang = 'uk'] Code of the language. Instance trys to find code himself. Otherwise uses 'uk'.
+ * @param {string} [params.root] Root of the language files.
+ * @param {boolean} [params.autoload = true] Is in needed to start loading language data right after making instance?
+ * @param {Object} [config] Configurations.
+ * @param {{}} [config.defLangCodes] Default language codes.
  * @constructor
  * @author Balov Bohdan <balovbohdan@gmail.com>
- * @version 1.0.0
- *
- * @example
- *
- * // Make instance.
- * var lang = Lang.getReadyInst("/lang/user-profile/", "uk");
- *
- * // Get language data elements.
- * var userAchievements = lang.get("achievements");
- * var userArticles = lang.get("articles");
- *
- * // Use language data elements.
- * var h1 = document.createElement("h1"), h2 = document.createElement("h2");
- * h1.textContent = userAchievements;
- * h2.textContent = userArticles;
- * document.body.appendChild(h1);
- * document.body.appendChild(h2);
+ * @version 0.1.2
  */
-function Lang(params) {
-    params = Object.assign(this.__getDefParams(), params || {});
+function Lang(params, config) {
+    params = $.extend(true, this.__getDefParams(), params || {});
+    config = $.extend(true, this.__getDefConfig(), config || {});
 
     /**
-     * Language code.
+     * Main language code.
      * @type {string}
      * @private
      */
-    this.__lang = this.__findLangCode(params);
+    this.__langCode = this.__findLangCode(params);
 
     /**
-     * Path to the folder of language files.
+     * Default languages codes.
      * @type {string}
      * @private
      */
-    this.__root = params.root || "/lang/";
+    this.__defLangCodes = config.defLangCodes[this.__langCode];
+
+    /**
+     * Path to the root of language data.
+     * @type {string}
+     * @private
+     */
+    this.__root = params.root || Lang.getTeachLangRoot();
 
     /**
      * Language data.
@@ -51,13 +45,6 @@ function Lang(params) {
     this.__data = null;
 
     /**
-     * Is language data autoloading right now?
-     * @type {boolean}
-     * @private
-     */
-    this.__autoloadingNow = false;
-
-    /**
      * Promise of autoloader of language data.
      * @type {null|Promise}
      * @private
@@ -65,116 +52,156 @@ function Lang(params) {
     this.__autoloadingPomise = null;
 
     if (params.autoload)
-        this.__autoloadLangData()
-            .catch(console.warn.bind(null, "Failed at autoloading language data."));
+        this.__loadLangData()
+            .catch(console.warn.bind(null, `Failed at autoloading of language data.`));
 }
 
-Lang.prototype.name = "Lang";
+Lang.prototype.name = 'Lang';
 
 /**
- * Tries to find language code for the instance.
- * It is possible to extend this method if there are some additional
- * resources of the language code.
- * @param {Object} [params] Parameters of the instance.
+ * Trys to find language code for the instance.
+ * @param {Object} [params] Parameters if the instance.
  * @returns {string} Language code.
- * @private
+ * @protected
  */
 Lang.prototype.__findLangCode = function (params) {
     try {
         return Lang.validateLangCodeStrict(params.lang);
     } catch (e) {}
 
-    // TODO: Add additional sources of the language code.
-    // For example: URL, PHP session, etc.
-
     return Lang.UK;
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Language constants.
 
 /**
  * Bulgarian.
  * @type {string}
  */
-Lang.BG = "bg";
+Lang.BG = 'bg';
 
 /**
  * Czech.
  * @type {string}
  */
-Lang.CZ = "cz";
+Lang.CZ = 'cz';
 
 /**
  * Kazakh.
  * @type {string}
  */
-Lang.KZ = "kz";
+Lang.KZ = 'kz';
 
 /**
  * Lithuanian.
  * @type {string}
  */
-Lang.LT = "lt";
+Lang.LT = 'lt';
 
 /**
  * Latvian.
  * @type {string}
  */
-Lang.LV = "lv";
+Lang.LV = 'lv';
 
 /**
  * Polish.
  * @type {string}
  */
-Lang.PL = "pl";
+Lang.PL = 'pl';
 
 /**
  * Russian.
  * @type {string}
  */
-Lang.RU = "ru";
+Lang.RU = 'ru';
 
 /**
  * Slovakian.
  * @type {string}
  */
-Lang.SK = "sk";
+Lang.SK = 'sk';
 
 /**
  * Ukrainian.
  * @type {string}
  */
-Lang.UA = "ua";
+Lang.UA = 'ua';
 
 /**
  * English.
  * @type {string}
  */
-Lang.UK = "uk";
+Lang.UK = 'uk';
 
 /**
  * Uzbekistanian.
  * @type {string}
  */
-Lang.UZ = "uz";
+Lang.UZ = 'uz';
+Lang.UZ = 'uz';
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Factories.
 
 /**
- * Prepares instance.
- * Loads language data asynchronically.
- * @returns {Promise<Lang>}
+ * Instantiates language instance asynchronically.
+ * @param {Function} LangClass Language object constructor.
+ * @param {{}} [params]
+ * @return {Promise<Lang>}
+ * @throws {Error}
  */
-Lang.prototype.prepare = function () {
-    if (this.__data) return Promise.resolve(this);
-    return this.__autoloadLangData().then(function () { return this; }.bind(this));
+Lang.instantiateAsync = function (LangClass, params) {
+    params = params || {};
+
+    try {
+        return PhpSession.getInstanceAsync()
+            .then(function (phpSession) {
+                params = $.extend({ phpSession: phpSession }, params);
+                return (new LangClass(params)).wait();
+            });
+    } catch (e) {
+        return LangClass.makeInst(params);
+    }
 };
+
+/**
+ * Makes instance using root of the language files.
+ * @param {string} root
+ * @param {string} [lang = 'uk'] Code of the language.
+ * @returns {Lang}
+ */
+Lang.instantiateByRoot = function (root, lang) {
+    if (!root) throw new Error(`Incorrect URL of the language files.`);
+    return new Lang({ root: root, lang: lang });
+};
+
+/**
+ * Makes ready instance of some 'Lang' class.
+ * Waits while language data is preparing.
+ * @param {Function} Clss Language class.
+ * @param {string} [lang] Language code.
+ * @param {string} [root] Path to the folder of language files.
+ * @returns {Promise<Lang>} Ready language instance.
+ * @throws {Error}
+ */
+Lang.getReadyInstByClass = function (Clss, lang, root) {
+    if (typeof Clss !== 'function') throw new Error(`Got invalid 'Lang' constructor!`);
+    return (new Clss({ lang: lang, root: root })).prepare();
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Main interface.
 
 /**
  * Waits while language data is autoloading.
- * @param {int} [tries = 200] Number of tries to wait for autoloading of language data.
- * @returns {Promise<Lang>} Ready language instance.
+ * @returns {Promise<Lang>}
  */
-Lang.prototype.wait = function (tries) {
-    if (this.__data) return Promise.resolve(this);
-    return this.prepare();
-};
+Lang.prototype.wait = function () { return this.__loadLangData(); };
 
 /**
  * Returns available language codes.
@@ -201,9 +228,7 @@ Lang.getLangCodes = function () {
  * @param {string} langCode Language code to validate.
  * @returns {boolean}
  */
-Lang.validateLangCode = function (langCode) {
-    return Lang.getLangCodes().includes(langCode);
-};
+Lang.validateLangCode = function (langCode) { return Lang.getLangCodes().includes(langCode); };
 
 /**
  * Says if language code is valid.
@@ -212,42 +237,219 @@ Lang.validateLangCode = function (langCode) {
  * @returns {string} Valid language code.
  */
 Lang.validateLangCodeStrict = function (langCode) {
-    if (!Lang.validateLangCode(langCode)) throw new Error("Got invalid language code: "+ langCode);
+    if (!Lang.validateLangCode(langCode)) throw new Error(`Got invalid language code: ${langCode}.`);
     return langCode;
 };
 
 /**
- * Returns path to the folder of class.
+ * Returns path to the root of class.
  * @returns {string}
  */
-Lang.getRoot = function () {
-    return "/libs/balov/js/lang/";
-};
+Lang.getRoot = function () { return '/libs/balov/js/lang/'; };
 
 /**
- * Goes through the language data.
+ * @description Goes through the language data.
  * @param {Function} func Callback for parts of the language data.
  * @returns {Array} Results of the callback calls.
  */
 Lang.prototype.map = function (func) {
-    if (typeof func !== "function") throw new Error("Got incorrect callback.");
-    var i, langData = this.getAll(), store = [];
-    for (i in langData) if (langData.hasOwnProperty(i)) store.push(func(langData[i], i, langData));
+    if (typeof func !== 'function') throw new Error('Incorrect callback.');
+    const langData = this.getAll();
+    const store = [];
+    for (let i in langData) if (langData.hasOwnProperty(i)) store.push(func(langData[i], i, langData));
     return store;
 };
 
 /**
- * Returns all language data.
+ * @description Returns all language data.
  * @returns {Object}
  */
-Lang.prototype.getAll = function () {
-    return this.__getLang();
+Lang.prototype.getAll = function () { return this.__getLang(); };
+
+/**
+ * Looks for langage item.
+ * @param {string|number} key
+ * @returns {string}
+ */
+Lang.prototype.get = function (key) {
+    if (!key) throw new Error(`Got invalid language key! (${key})`);
+
+    try {
+        const data = this.__getLang();
+        return data[key] || '';
+    } catch (e) {
+        return '';
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Model.
+
+/**
+ * Loads language data from the file synchronically.
+ * @returns {Array<string>} Language files contents.
+ * @private
+ */
+Lang.prototype.__loadLangFilesSync = function () { return Lang.__loadLangFilesSync(this.__getLangFilesUrls()); };
+
+/**
+ * Loads language data from the file asynchronically.
+ * @returns {Promise<Array<string>>} Language files contents.
+ * @private
+ */
+Lang.prototype.__loadLangFilesAsync = function () { return Lang.__loadLangFilesAsync(this.__getLangFilesUrls().reverse()); };
+
+/**
+ * Loads language file synchronically.
+ * @param {string} url
+ * @return {string}
+ * @throws {Error}
+ * @private
+ */
+Lang.__loadLangFileSync = function (url) {
+    console.warn(`Method 'Lang.__loadLangFileSync' is deprecated. Use asynchronical methods instead!`);
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, false);
+    Lang.__setLoadLangFileHeaders(xhr);
+    xhr.send();
+    if (xhr.status !== 200) throw new Error(`Failed to load language data synchronically. URL: ${url}.`);
+    return xhr.responseText;
 };
 
 /**
- * Returns all language data of the instance.
- * This method gets language data from language file
- * in first time and buffers it.
+ * Loads language files synchronically.
+ * @param {Array<string>} urls
+ * @returns {Array<string>}
+ * @private
+ */
+Lang.__loadLangFilesSync = function (urls) {
+    return urls
+        .map(function (url) {
+            try {
+                return Lang.__loadLangFileSync(url);
+            } catch (e) {
+                console.warn(e.message);
+                return '';
+            }
+        })
+        .filter(function (contents) { return contents; });
+};
+
+/**
+ * Loads language file asynchronically.
+ * @param {string} url
+ * @return {Promise<string>}
+ * @private
+ */
+Lang.__loadLangFileAsync = function (url) {
+    return new Promise(function (success, error) {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4) return;
+            if (xhr.status !== 200) return error(new Error(`Failed to load language file. URL: ${url}.`));
+            return success(xhr.responseText);
+        };
+
+        Lang.__setLoadLangFileHeaders(xhr);
+        xhr.send();
+    }.bind(this));
+};
+
+/**
+ * Loads language files asynchronically.
+ * @param {Array} urls
+ * @return {Promise}
+ * @private
+ */
+Lang.__loadLangFilesAsync = function (urls) {
+    return Promise.all(
+        urls.map(function (url) {
+            return Lang.__loadLangFileAsync(url).catch(console.warn.bind(console));
+        })
+    );
+};
+
+/**
+ * Sets headers for the loading language files using 'XHR'.
+ * @param {XMLHttpRequest} xhr
+ * @private
+ * @static
+ */
+Lang.__setLoadLangFileHeaders = function (xhr) {
+    xhr.setRequestHeader('Content-type', 'application/json; charset=utf-8');
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded; charset=utf-8');
+};
+
+/**
+ * Returns default language data of the instance.
+ * Language data is going to be loaded from 'JSON' the file synchronically.
+ * @returns {Object}
+ * @private
+ */
+Lang.prototype.__getLangDataSync = function () { return Lang.__extractAndPrepareLangData(this.__loadLangFilesSync()); };
+
+/**
+ * Returns default language data of the instance.
+ * Language data is going to be loaded from 'JSON' the file asynchronically.
+ * @returns {Promise}
+ * @private
+ */
+Lang.prototype.__getLangDataAsync = function () {
+    return this.__loadLangFilesAsync().then(Lang.__extractAndPrepareLangData);
+};
+
+/**
+ * Extracts language data from the language files contents.
+ * @param {Array<{}>} langData
+ * @return {{}}
+ * @private
+ */
+Lang.__extractAndPrepareLangData = function (langData) {
+    try {
+        if (!langData || !langData.length) return {};
+        langData = langData.filter(function (item) { return item; });
+        if (langData.length === 1) return JSON.parse(langData[0]);
+
+        return langData.reduce(function (mergedData, item) {
+            try {
+                return Object.assign(mergedData, JSON.parse(item));
+            } catch (e) {
+                return mergedData;
+            }z
+        }, {});
+    } catch (e) {
+        return {};
+    }
+};
+
+/**
+ * Makes autoloading of the language data.
+ * Asynchronical.
+ * @returns {Promise<Lang>}
+ * @private
+ */
+Lang.prototype.__loadLangData = function () {
+    if (this.__data) return Promise.resolve(this);
+    if (this.__autoloadingPomise) return this.__autoloadingPomise;
+
+    return this.__autoloadingPomise = this.__getLangDataAsync()
+        .then(function (langData) {
+            // console.log('Loaded language data:', langData);
+            if (this.__data) return this.__data;
+            this.__data = langData;
+            return this;
+        }.bind(this));
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @description Returns all language data of the instance.
+ * @description This method gets language data in first time and buffers it.
  * @protected
  */
 Lang.prototype.__getLang = function () {
@@ -256,144 +458,80 @@ Lang.prototype.__getLang = function () {
 };
 
 /**
- * Returns aim language data element.
- * @param {string|int} key Key to find aim language data element.
- * @returns {string}
+ * Makes language file URL.
+ * @param {string} langCode
+ * @return {string}
+ * @private
  */
-Lang.prototype.get = function (key) {
-    if (!key) throw new Error("Got incorrect language data element key: (" + key + ")");
-    var data = this.__getLang();
-
+Lang.prototype.__makeLangFileUrl = function (langCode) {
     try {
-        return data[key] || "";
+        langCode = Lang.validateLangCodeStrict(langCode);
+        return `${this.__root}${langCode}.json`;
     } catch (e) {
-        return "";
+        return '';
     }
 };
 
 /**
- * Returns path to the language file.
- * @returns {string}
+ * Returns unique language codes.
+ * Instance will try to load language files for this codes.
+ * @return {Array<string>}
  * @private
  */
-Lang.prototype.__getLangFilePath = function () { return this.__root + this.__lang + ".json"; };
+Lang.prototype.__getLangCodes = function () {
+    return [].concat(this.__langCode || Lang.UK, this.__defLangCodes || [])
+        .filter(function (langCode, i, langCodes) { return langCodes.indexOf(langCode) === i; });
+};
+
+/**
+ * Makes URLs of language files thay it is needed to load.
+ * @return {Array<string>}
+ * @private
+ */
+Lang.prototype.__getLangFilesUrls = function () {
+    return this.__getLangCodes()
+        .map(this.__makeLangFileUrl.bind(this))
+        .filter(function (url) { return url; });
+};
 
 /**
  * Returns default parameters for the instance.
  * @returns {Object}
  * @private
  */
-Lang.prototype.__getDefParams = function () {
-    return { autoload: false, root: "/lang/" };
-};
+Lang.prototype.__getDefParams = function () { return { autoload: true }; };
 
 /**
- * Loads language data from the file synchronically.
- * @returns {string}
+ * Returns default configurations.
+ * @return {{defLangCodes:{}}}
  * @private
  */
-Lang.prototype.__loadLangFileSync = function () {
-    var xhr = new XMLHttpRequest(), url = this.__getLangFilePath();
-    xhr.open("GET", url, false);
-    this.__setLoadLangFileHeaders(xhr);
-    xhr.send();
-    if (xhr.status !== 200) throw new Error("Failed at loading language data synchronically. URL: " + url);
-    return xhr.responseText;
+Lang.prototype.__getDefConfig = function () {
+    return {
+        defLangCodes: {
+            bg: [Lang.UK, Lang.RU],
+            cz: [Lang.UK, Lang.RU],
+            kz: [Lang.RU, Lang.UK],
+            lt: [Lang.UK, Lang.RU],
+            lv: [Lang.UK, Lang.RU],
+            pl: [Lang.UK, Lang.RU],
+            ru: [Lang.UK],
+            sk: [Lang.UK, Lang.RU],
+            ua: [Lang.UK, Lang.RU],
+            uk: [Lang.RU],
+            uz: [Lang.RU, Lang.UK]
+        }
+    };
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Loads language data from the file asynchronically.
- * @returns {Promise}
- * @private
+ * Language classes names.
+ * @constructor
  */
-Lang.prototype.__loadLangFileAsync = function () {
-    return new Promise(function (success) {
-        var xhr = new XMLHttpRequest(), url = this.__getLangFilePath();
-        xhr.open("GET", url, true);
+Lang.InstancesNames = function () {};
 
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState !== 4) return;
-            if (xhr.status !== 200) throw new Error("Failed at loading language data asynchronically. URL: " + url);
-            return success(xhr.responseText);
-        };
+Lang.InstancesNames.prototype.name = 'Lang.InstancesNames';
 
-        this.__setLoadLangFileHeaders(xhr);
-        xhr.send();
-    }.bind(this));
-};
-
-/**
- * Sets headers for the loading language files using "XHR".
- * @param {XMLHttpRequest} xhr
- * @private
- */
-Lang.prototype.__setLoadLangFileHeaders = function (xhr) {
-    xhr.setRequestHeader("Content-type", "application/json; charset=utf-8");
-    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=utf-8");
-};
-
-/**
- * Returns default language data of the instance.
- * Language data is going to be loaded from "JSON" the file synchronically.
- * @returns {Object}
- * @private
- */
-Lang.prototype.__getLangDataSync = function () {
-    return JSON.parse(this.__loadLangFileSync());
-};
-
-/**
- * Returns default language data of the instance.
- * Language data is going to be loaded from "JSON" the file asynchronically.
- * @returns {Promise<Object>} Language data.
- * @private
- */
-Lang.prototype.__getLangDataAsync = function () {
-    return this.__loadLangFileAsync().then(JSON.parse);
-};
-
-/**
- * Makes autoloading of the language data.
- * Asynchronical.
- * @returns {Promise<Object>} Language data.
- * @private
- */
-Lang.prototype.__autoloadLangData = function () {
-    if (this.__data) return Promise.resolve(this.__data);
-    if (this.__autoloadingNow) return this.__autoloadingPomise;
-    this.__autoloadingNow = true;
-
-    return this.__autoloadingPomise = this.__getLangDataAsync()
-        .then(function (langData) {
-            this.__autoloadingNow = false;
-            if (this.__data) return this.__data;
-            return this.__data = langData;
-        }.bind(this));
-};
-
-/**
- * Makes ready instance of some "Lang" class.
- * Waits while language data is autoloading.
- * @param {Function} Clss Language class.
- * @param {string} [lang] Language code.
- * @param {string} [root] Path to the folder of language files.
- * @returns {Promise<Lang>} Ready language instance.
- * @throws {Error}
- */
-Lang.getReadyInstByClass = function (Clss, lang, root) {
-    if (typeof Clss !== "function") throw new Error("Got incorrect 'Lang' constructor!");
-    return (new Clss({ lang: lang, root: root })).prepare();
-};
-
-/**
- * Makes ready instance.
- * Waits while language data is autoloading.
- * @param {string} [lang] Language code.
- * @param {string} [root] Path to the folder of language files.
- * @returns {Promise<Lang>} Ready language instance.
- * @throws {Error}
- */
-Lang.getReadyInst = function (lang, root) {
-    return Lang.getReadyInstByClass(Lang, lang, root);
-};
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
