@@ -6,19 +6,22 @@ Class to make multilanguage of web-site as easy as possible. Gets language data 
 You can use this language class directly (see code below). But it is better to make subclasses of this class for different logical blocks of the web-site (see next example).
 
 ```javascript
-// Make instance.
-var lang = Lang.getReadyInst("/lang/user-profile/", "uk");
+// Make language instance.
+const lang = Lang.getReadyInst('/lang/user-profile/', 'uk');
 
-// Get language data elements.
-var userAchievements = lang.get("achievements");
-var userArticles = lang.get("articles");
+// Wait while language data is loading.
+lang.wait().then(() => {
+    // Use language instance.
+ 
+    const h1 = document.createElement('h1');
+    const h2 = document.createElement('h2');
+ 
+    h1.textContent = lang.get('achievements');
+    h2.textContent = lang.get('articles');
 
-// Use language data elements.
-var h1 = document.createElement("h1"), h2 = document.createElement("h2");
-h1.textContent = userAchievements;
-h2.textContent = userArticles;
-document.body.appendChild(h1);
-document.body.appendChild(h2);
+    document.body.appendChild(h1);
+    document.body.appendChild(h2);
+});
 ```
 
 For this example you have to organize this folders/files structure:
