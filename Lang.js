@@ -148,27 +148,6 @@ Lang.UZ = 'uz';
 // Factories.
 
 /**
- * Instantiates language instance asynchronically.
- * @param {Function} LangClass Language object constructor.
- * @param {{}} [params]
- * @return {Promise<Lang>}
- * @throws {Error}
- */
-Lang.instantiateAsync = function (LangClass, params) {
-    params = params || {};
-
-    try {
-        return PhpSession.getInstanceAsync()
-            .then(function (phpSession) {
-                params = $.extend({ phpSession: phpSession }, params);
-                return (new LangClass(params)).wait();
-            });
-    } catch (e) {
-        return LangClass.makeInst(params);
-    }
-};
-
-/**
  * Makes instance using root of the language files.
  * @param {string} root
  * @param {string} [lang = 'uk'] Code of the language.
@@ -190,7 +169,11 @@ Lang.instantiateByRoot = function (root, lang) {
  */
 Lang.getReadyInstByClass = function (Clss, lang, root) {
     if (typeof Clss !== 'function') throw new Error(`Got invalid 'Lang' constructor!`);
-    return (new Clss({ lang: lang, root: root })).prepare();
+    
+    /** @type {Lang} */
+    const langInstance = new Clss({ lang: lang, root: root });
+    
+    return langInstance.wait();
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
