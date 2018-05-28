@@ -40,22 +40,30 @@ app
 
 ## 2. Better usage.
 It is better when you make subclasses of the main language class for the different logical blocks of your web-site. For instance: user profile, news, articles, admin page, etc.
+
 ```javascript
 /**
  * Language class for user profile page.
  * Singletone.
  * @param {Object} [params] Parameters. (See superclass for details.)
  */
-function UserProfileLang(params) {
-    if (UserProfileLang.__inst instanceof UserProfileLang) return UserProfileLang.__inst;
-    UserProfileLang.__inst = this;
+Lang.UserProfile = function (params) {
+    if (Lang.UserProfile.__inst instanceof Lang.UserProfile) return Lang.UserProfile.__inst;
+    Lang.UserProfile.__inst = this;
     params = params || {};
     Lang.call(this, { root: "/lang/user-profile/", lang: params.lang });
-}
+};
 
-UserProfileLang.prototype = Object.create(Lang.prototype);
-UserProfileLang.prototype.constructor = UserProfileLang;
-UserProfileLang.prototype.name = "UserProfileLang";
+Lang.UserProfile.prototype = Object.create(Lang.prototype);
+Lang.UserProfile.prototype.constructor = Lang.UserProfile;
+Lang.UserProfile.prototype.name = "Lang.UserProfile";
+
+/**
+ * Single instance of the class.
+ * @type {null|Lang.UserProfile}
+ * @private
+ */
+Lang.UserProfile.__inst = null;
 
 /**
  * Makes ready instance.
@@ -64,17 +72,17 @@ UserProfileLang.prototype.name = "UserProfileLang";
  * @returns {Promise<Lang>} Ready language instance.
  * @throws {Error}
  */
-UserProfileLang.getReadyInst = function (lang) {
-    return Lang.getReadyInstByClass(UserProfileLang, lang);
+Lang.UserProfile.getReadyInst = function (lang) {
+    return Lang.getReadyInstByClass(Lang.UserProfile, lang);
 };
 ```
 
-Do note that ``UserProfileLang`` class is singletone; it means that it is possible to make only one instance of it (when you creating instance more than one time you get the same instance).
+Do note that ``Lang.UserProfile`` class is singletone; it means that it is possible to make only one instance of it (when you creating instance more than one time you get the same instance).
 So now we can rewrite code from the first example. As you can see it looks pretty good and laconically.
 
 ```javascript
 // Make instance.
-var lang = UserProfileLang.getReadyInst("uk");
+var lang = Lang.UserProfile.getReadyInst("uk");
 ```
 
 This version of making language instance much more safe. Using classes of the certain logical web-site blocks you can't make mistake in the paths to language data folders. (And you don't need type the same paths again and again!)
