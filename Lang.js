@@ -172,11 +172,20 @@ Lang.UZ = 'uz';
  * @param {string} root
  * @param {string} [lang = 'uk'] Code of the language.
  * @returns {Lang}
+ * @throws {Error}
  */
 Lang.instantiateByRoot = function (root, lang) {
     if (!root) throw new Error(`Got invalid URL of the language files.`);
     return new Lang({ root: root, lang: lang });
 };
+
+/**
+ * Instantiates language class.
+ * @param {string} root Language files root.
+ * @param {string} langCode
+ * @returns {Promise<Lang>}
+ */
+Lang.getReadyInstByRoot = function (root, langCode) { return Lang.instantiateByRoot(root, langCode).wait(); };
 
 /**
  * Makes ready instance of some 'Lang' class.
