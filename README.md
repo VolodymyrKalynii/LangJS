@@ -7,7 +7,7 @@ You can use this language class directly (see code below). But it is better to m
 
 ```javascript
 // Make language instance.
-const lang = Lang.getReadyInst('/lang/user-profile/', 'uk');
+const lang = Lang.instantiateByRoot('/lang/user-profile/', 'uk');
 
 // Wait while language data is loading.
 lang.wait().then(() => {
